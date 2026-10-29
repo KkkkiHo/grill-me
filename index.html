@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>做嘢前先審問 · Grill Me</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", sans-serif; background: #f7f3ee; color: #2b2118; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px 12px 30px; }
+  .wrap { width: min(96vw, 560px); }
+  header { text-align: center; margin: 6px 0 14px; }
+  h1 { margin: 0; font-size: 30px; }
+  h1 .flame { font-size: 30px; }
+  .tagline { margin: 6px 0 0; font-size: 14px; color: #8a6d52; line-height: 1.6; }
+  .card { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(60, 35, 10, .08); margin-bottom: 12px; }
+  label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 16px; }
+  textarea { width: 100%; min-height: 120px; font: inherit; font-size: 16px; line-height: 1.6; border: 2px solid #e5d9c8; border-radius: 10px; padding: 12px; resize: vertical; background: #fffdf8; color: #2b2118; }
+  textarea:focus { outline: none; border-color: #c62828; }
+  .hint { font-size: 13px; color: #8a6d52; line-height: 1.6; margin: 8px 0 0; }
+  .stage { font-size: 13px; font-weight: 700; color: #c62828; letter-spacing: 1px; margin-bottom: 6px; }
+  .progress { height: 8px; background: #efe6d8; border-radius: 4px; overflow: hidden; margin: 8px 0 4px; }
+  .progress > div { height: 100%; background: #c62828; width: 0%; transition: width .25s; }
+  .progress-text { font-size: 13px; color: #8a6d52; }
+  .q-text { font-size: 21px; font-weight: 800; line-height: 1.45; margin: 4px 0 6px; }
+  .q-hint { font-size: 14px; color: #6d5a45; line-height: 1.6; margin: 0 0 10px; }
+  .followup { display: none; background: #fff3e0; border-left: 4px solid #ef6c00; border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.6; margin: 10px 0 0; }
+  .followup.show { display: block; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: 13px 16px; font-weight: 700; font-size: 16px; }
+  .btn-main { background: #c62828; color: #fff; flex: 1; min-width: 140px; }
+  .btn-ghost { background: #efe6d8; color: #4e3b28; }
+  .btn-quiet { background: transparent; color: #8a6d52; padding: 10px 8px; font-size: 14px; }
+  button:disabled { opacity: .45; }
+  .qa-item { border-top: 1px solid #efe6d8; padding: 12px 0; }
+  .qa-item:first-child { border-top: 0; padding-top: 0; }
+  .qa-item .q { font-weight: 700; font-size: 15px; line-height: 1.5; }
+  .qa-item .a { font-size: 15px; line-height: 1.6; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+  .qa-item .a.empty { color: #b3261e; }
+  .qa-item .edit { float: right; font-size: 13px; padding: 6px 10px; }
+  pre.spec { background: #fffdf8; border: 2px solid #e5d9c8; border-radius: 10px; padding: 14px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; margin: 0; max-height: 52vh; overflow: auto; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .note { font-size: 12px; color: #8a6d52; text-align: center; line-height: 1.7; }
+  .hidden { display: none !important; }
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: #2b2118; color: #fff; padding: 10px 18px; border-radius: 24px; font-size: 14px; display: none; z-index: 20; }
+  .toast.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="flame">🔥</span> 做嘢前先審問</h1>
+    <p class="tagline">Grill Me 網頁版：開工之前，一條一條問清楚，<br>問完先出一份規格，唔好做完先發現唔係想要嘅嘢。</p>
+  </header>
+
+  <!-- 開始 -->
+  <div class="card" id="screen-start">
+    <label for="idea-input">你想做咩？一句話講咗先</label>
+    <textarea id="idea-input" placeholder="例如：做個記賬程式，畀我自己記每日使咗幾多錢"></textarea>
+    <p class="hint">講完之後，我會一條一條問：邊個用、解決咩問題、唔做咩、出錯點算、點樣先算成功。答得愈具體，份規格愈準。唔識答可以撳「跳過」。</p>
+    <div class="row">
+      <button class="btn-main" id="start-btn" type="button">開始審問</button>
+    </div>
+    <p class="hint" id="resume-note"></p>
+  </div>
+
+  <!-- 審問 -->
+  <div class="card hidden" id="screen-quiz">
+    <div class="stage" id="stage-label"></div>
+    <div class="progress"><div id="progress-bar"></div></div>
+    <div class="progress-text" id="progress-text"></div>
+    <p class="q-text" id="q-text"></p>
+    <p class="q-hint" id="q-hint"></p>
+    <textarea id="answer-input" placeholder="喺呢度答…"></textarea>
+    <div class="followup" id="followup-note">講多少少啦，一兩個字好難寫入規格。例如：邊個用、點用、咩情況會發生。真係唔知就撳「跳過」，唔好亂答。</div>
+    <div class="row">
+      <button class="btn-ghost" id="prev-btn" type="button">上一題</button>
+      <button class="btn-ghost" id="skip-btn" type="button">跳過</button>
+      <button class="btn-main" id="next-btn" type="button">下一題</button>
+    </div>
+    <div class="row">
+      <button class="btn-quiet" id="change-idea-btn" type="button">改主意（改返個諗法）</button>
+      <button class="btn-quiet" id="finish-btn" type="button">唔問喇，直接出規格 →</button>
+    </div>
+  </div>
+
+  <!-- 規格 -->
+  <div class="card hidden" id="screen-spec">
+    <label>份規格出咗喇，睇下有冇嘢要改</label>
+    <pre class="spec" id="spec-output"></pre>
+    <div class="row">
+      <button class="btn-main" id="copy-btn" type="button">複製規格</button>
+      <button class="btn-ghost" id="download-btn" type="button">下載檔案</button>
+    </div>
+    <div class="row">
+      <button class="btn-ghost" id="restart-btn" type="button">重新開始</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="screen-qa">
+    <label>問答記錄（撳「修改」返去改嗰題）</label>
+    <div id="qa-list"></div>
+  </div>
+
+  <p class="note">所有內容只喺你部手機嘅瀏覽器入面處理同儲存，唔會上傳去任何地方。<br>草稿會自動存喺呢部手機，重新開返呢頁會繼續上次問到嘅位置。</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- Pure logic: question bank, planning, spec ---------- */
+var QUESTIONS = [
+  { id: "who", stage: "第一階段 · 搞清楚做咩", text: "邊個會用呢樣嘢？", hint: "例如：淨係你自己用、畀客人用、畀屋企人用。用嘅人唔同，要求差好遠。" },
+  { id: "problem", stage: "第一階段 · 搞清楚做咩", text: "佢解決咩問題？而家冇佢，你係點做？", hint: "講下而家嘅做法同埋有咩唔方便。唔知解決咩問題，做出嚟好易變成冇人用嘅嘢。" },
+  { id: "core", stage: "第一階段 · 搞清楚做咩", text: "最重要嘅一個功能係咩？只可以揀一個。", hint: "如果只可以有一個功能，你會揀邊個？呢個就係成個項目嘅核心，其他都係次要。" },
+  { id: "success", stage: "第一階段 · 搞清楚做咩", text: "點樣先算成功？點樣驗收？", hint: "例如：入到數、計到數、開到連結就用得。講得出驗收標準，先知幾時算做完。" },
+  { id: "flow", stage: "第一階段 · 搞清楚做咩", text: "平時會點用？由頭到尾講一次流程。", hint: "例如：打開 → 輸入 → 撳掣 → 睇到結果。一步一步講，唔好跳步。" },
+  { id: "notdo", stage: "第二階段 · 劃界線", text: "有咩功能，今次一定唔做？", hint: "講明唔做咩，同講明做咩一樣重要。唔劃界，個項目會愈做愈大，永遠做唔完。" },
+  { id: "sensitive", stage: "第二階段 · 劃界線", text: "會唔會涉及錢、帳戶、密碼或者個人資料？", hint: "例如：收錢、登入、身份證、電話。有的話要講清楚點處理，冇就答「冇」。" },
+  { id: "wrong", stage: "第三階段 · 挑戰同邊界情況", text: "如果用嘅時候出錯，或者冇資料，應該點？", hint: "例如：入錯數、網絡唔好、搵唔到資料。出錯嗰陣嘅反應，決定咗樣嘢好唔好用。" },
+  { id: "failed", stage: "第三階段 · 挑戰同邊界情況", text: "以前有冇試過類似嘅嘢唔 work？點解唔 work？", hint: "以前踩過嘅坑，今次要避開。如果冇試過就答「冇」。" },
+  { id: "risk", stage: "第三階段 · 挑戰同邊界情況", text: "邊個位最容易出事，或者你最驚出事？", hint: "例如：計錯數、唔見咗記錄、俾錯人睇到。最驚嗰個位，要最先諗點防。" },
+  { id: "example", stage: "第四階段 · 落實", text: "有冇參考例子？你見過邊樣嘢似你想做嘅？", hint: "例如：邊個 App、邊個網站、邊個功能。講得出參考，做嘅時候就有個樣跟。" },
+  { id: "when", stage: "第四階段 · 落實", text: "幾時要用到？有冇死線或者特別日子？", hint: "例如：下星期要用、冇死線，慢慢嚟。有死線就要先做最核心嘅部份。" }
+];
+var BRANCH_QUESTIONS = {
+  money: { id: "money", stage: "第二階段 · 劃界線", text: "錢嗰部份點計？邊個俾錢俾邊個，點對數？", hint: "例如：點計利息、點分期、邊個收錢。如果唔涉及收錢，答「唔涉及收錢」。" },
+  login: { id: "login", stage: "第二階段 · 劃界線", text: "需唔需要登入？唔同人可以睇到啲咩？", hint: "例如：淨係自己睇到、定係人人都睇到。權限唔講清楚，好易整錯。" },
+  content: { id: "content", stage: "第二階段 · 劃界線", text: "內容邊個寫、邊個審？出錯點改？", hint: "例如：自己寫、AI 寫完自己改。出咗錯要改得返，先唔會手忙腳亂。" }
+};
+function planQuestions(idea) {
+  var text = (idea || "").toLowerCase();
+  var list = QUESTIONS.slice();
+  var extras = [];
+  if (/錢|收費|付款|貸款|利息|訂單|收錢|找數|月供/.test(text)) extras.push(BRANCH_QUESTIONS.money);
+  if (/登入|帳戶|會員|註冊|密碼|帳號/.test(text)) extras.push(BRANCH_QUESTIONS.login);
+  if (/文章|影片|發佈|抖音|公眾號|貼文|內容|寫嘢/.test(text)) extras.push(BRANCH_QUESTIONS.content);
+  if (extras.length) {
+    var insertAt = 5;
+    for (var i = 0; i < extras.length; i++) list.splice(insertAt + i, 0, extras[i]);
+  }
+  return list;
+}
+function needsFollowUp(answer) {
+  var t = (answer || "").trim();
+  return t.length > 0 && t.length < 8;
+}
+function buildSpec(idea, qa) {
+  var lines = [];
+  lines.push("# 項目規格：" + (idea || "（未填）").trim().split("\n")[0]);
+  lines.push("");
+  lines.push("（由 Grill Me 網頁版整理，問答記錄如下。未答嘅題目列為「待決定」，開工前要補返。）");
+  lines.push("");
+  var pending = [];
+  qa.forEach(function (item, idx) {
+    lines.push("## " + (idx + 1) + ". " + item.q);
+    lines.push("");
+    var a = (item.a || "").trim();
+    if (a) lines.push(a);
+    else { lines.push("（未答，待決定）"); pending.push(item.q); }
+    lines.push("");
+  });
+  if (pending.length) {
+    lines.push("## 待決定事項");
+    lines.push("");
+    pending.forEach(function (q) { lines.push("- " + q); });
+    lines.push("");
+  }
+  var all = qa.map(function (x) { return x.a || ""; }).join(" ") + " " + (idea || "");
+  var risks = [];
+  if (/錢|收費|付款|貸款|利息|收錢|找數/.test(all)) risks.push("涉及金錢：開工前先定好計數方法同對數流程，計錯數好難補救。");
+  if (/密碼|帳戶|登入|身份證|電話號碼|個人資料/.test(all)) risks.push("涉及帳戶或個人資料：唔好喺對話入面傳密碼同身份證號碼，資料點存點睇要先講明。");
+  if (/上傳|公開|發佈|所有人/.test(all)) risks.push("涉及公開發佈：發佈前要覆核一次內容，發錯咗要識得點改點收回。");
+  if (risks.length) {
+    lines.push("## 提醒");
+    lines.push("");
+    risks.forEach(function (r) { lines.push("- " + r); });
+    lines.push("");
+  }
+  lines.push("---");
+  lines.push("下一步：覆核上面嘅問答，補返「待決定」嘅部份，確認無誤先開工。");
+  return lines.join("\n");
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { QUESTIONS: QUESTIONS, BRANCH_QUESTIONS: BRANCH_QUESTIONS, planQuestions: planQuestions, needsFollowUp: needsFollowUp, buildSpec: buildSpec };
+}
+
+/* ---------- UI ---------- */
+if (typeof document !== "undefined" && document.getElementById("idea-input")) {
+  var $ = function (id) { return document.getElementById(id); };
+  var STORE_KEY = "grillme-web-v1";
+  var state = { idea: "", plan: [], index: 0, answers: {}, followUpShown: {}, finished: false };
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ idea: state.idea, answers: state.answers, index: state.index, finished: state.finished })); } catch (e) {}
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return false;
+      var data = JSON.parse(raw);
+      if (!data || !data.idea) return false;
+      state.idea = data.idea;
+      state.answers = data.answers || {};
+      state.index = data.index || 0;
+      state.finished = !!data.finished;
+      state.plan = planQuestions(state.idea);
+      return true;
+    } catch (e) { return false; }
+  }
+  function clearStore() { try { localStorage.removeItem(STORE_KEY); } catch (e) {} }
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function () { t.classList.remove("show"); }, 1800);
+  }
+  function show(id) {
+    ["screen-start", "screen-quiz", "screen-spec", "screen-qa"].forEach(function (s) { $(s).classList.add("hidden"); });
+    $(id).classList.remove("hidden");
+  }
+  function currentAnswer() { return state.answers[state.plan[state.index].id] || ""; }
+  function renderQuestion() {
+    var q = state.plan[state.index];
+    $("stage-label").textContent = q.stage;
+    $("q-text").textContent = q.text;
+    $("q-hint").textContent = q.hint || "";
+    $("answer-input").value = currentAnswer();
+    $("followup-note").classList.remove("show");
+    var total = state.plan.length;
+    $("progress-bar").style.width = Math.round(((state.index + 1) / total) * 100) + "%";
+    $("progress-text").textContent = "第 " + (state.index + 1) + " 題，共 " + total + " 題";
+    $("prev-btn").disabled = state.index === 0;
+    $("next-btn").textContent = state.index === total - 1 ? "完成，出規格" : "下一題";
+    save();
+  }
+  function goTo(index) {
+    state.index = Math.max(0, Math.min(state.plan.length - 1, index));
+    state.finished = false;
+    show("screen-quiz");
+    renderQuestion();
+  }
+  function qaList() {
+    return state.plan.map(function (q) { return { q: q.text, a: state.answers[q.id] || "" }; });
+  }
+  function renderSpec() {
+    var spec = buildSpec(state.idea, qaList());
+    $("spec-output").textContent = spec;
+    var list = $("qa-list");
+    list.innerHTML = "";
+    qaList().forEach(function (item, idx) {
+      var div = document.createElement("div");
+      div.className = "qa-item";
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "btn-ghost edit"; btn.textContent = "修改";
+      btn.addEventListener("click", function () { goTo(idx); });
+      var qEl = document.createElement("div");
+      qEl.className = "q"; qEl.textContent = item.q;
+      var aEl = document.createElement("div");
+      aEl.className = "a" + (item.a.trim() ? "" : " empty");
+      aEl.textContent = item.a.trim() ? item.a : "（未答，待決定）";
+      div.appendChild(btn); div.appendChild(qEl); div.appendChild(aEl);
+      list.appendChild(div);
+    });
+    show("screen-spec");
+    $("screen-qa").classList.remove("hidden");
+    state.finished = true;
+    save();
+  }
+  function startQuiz() {
+    var idea = $("idea-input").value.trim();
+    if (!idea) { toast("寫咗想做咩先"); $("idea-input").focus(); return; }
+    var keep = (idea === state.idea && state.plan.length > 0);
+    var keptAnswers = keep ? state.answers : {};
+    var keptIndex = keep ? state.index : 0;
+    state.idea = idea;
+    state.plan = planQuestions(idea);
+    state.index = Math.max(0, Math.min(keptIndex, state.plan.length - 1));
+    state.answers = keptAnswers;
+    state.followUpShown = {};
+    state.finished = false;
+    show("screen-quiz");
+    renderQuestion();
+  }
+  $("start-btn").addEventListener("click", startQuiz);
+  $("prev-btn").addEventListener("click", function () {
+    state.answers[state.plan[state.index].id] = $("answer-input").value;
+    save();
+    goTo(state.index - 1);
+  });
+  $("skip-btn").addEventListener("click", function () {
+    state.answers[state.plan[state.index].id] = "";
+    if (state.index === state.plan.length - 1) renderSpec();
+    else goTo(state.index + 1);
+  });
+  $("next-btn").addEventListener("click", function () {
+    var q = state.plan[state.index];
+    var ans = $("answer-input").value;
+    if (!ans.trim()) { toast("未填：填少少，或者撳「跳過」"); return; }
+    if (needsFollowUp(ans) && !state.followUpShown[q.id]) {
+      state.followUpShown[q.id] = true;
+      $("followup-note").classList.add("show");
+      return;
+    }
+    state.answers[q.id] = ans;
+    if (state.index === state.plan.length - 1) renderSpec();
+    else goTo(state.index + 1);
+  });
+  $("finish-btn").addEventListener("click", function () {
+    state.answers[state.plan[state.index].id] = $("answer-input").value;
+    renderSpec();
+  });
+  $("change-idea-btn").addEventListener("click", function () {
+    state.answers[state.plan[state.index].id] = $("answer-input").value;
+    save();
+    $("idea-input").value = state.idea;
+    show("screen-start");
+  });
+  $("copy-btn").addEventListener("click", function () {
+    var text = $("spec-output").textContent;
+    function done() { toast("已經複製咗"); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else fallbackCopy(text), done();
+    function fallbackCopy(t) {
+      var ta = document.createElement("textarea");
+      ta.value = t;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  });
+  $("download-btn").addEventListener("click", function () {
+    try {
+      var blob = new Blob([$("spec-output").textContent], { type: "text/markdown;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "spec.md";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) { toast("下載唔到，用「複製規格」啦"); }
+  });
+  $("restart-btn").addEventListener("click", function () {
+    clearStore();
+    state = { idea: "", plan: [], index: 0, answers: {}, followUpShown: {}, finished: false };
+    $("idea-input").value = "";
+    $("resume-note").textContent = "";
+    show("screen-start");
+  });
+  /* Resume a saved draft, if any. */
+  if (load()) {
+    $("idea-input").value = state.idea;
+    $("resume-note").textContent = "搵到上次未做完嘅草稿：撳「開始審問」會由上次問到嘅位置繼續，之前答過嘅答案仲喺度。";
+    if (state.finished) renderSpec();
+  }
+}
+</script>
+</body>
+</html>
